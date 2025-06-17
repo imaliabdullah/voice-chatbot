@@ -72,7 +72,7 @@ python app.py
     ├── image_ocr.py     # Image OCR
     ├── vector_store.py  # Vector storage and search
     ├── llm_query.py     # LLM integration
-    └── tts.py          # Text-to-speech
+    └── prompts.py          # pre-defined prompt
 ```
 
 ## Requirements
