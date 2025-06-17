@@ -23,7 +23,6 @@ def query_llm(query, context):
     try:
         # Get formatted prompt using Jinja template
         prompt = get_context_prompt(context, query)
-        print(prompt)
 
         # Get response from Groq
         completion = client.chat.completions.create(

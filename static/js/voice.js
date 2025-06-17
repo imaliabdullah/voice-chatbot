@@ -106,20 +106,37 @@ startButton.addEventListener('click', async () => {
         analyser.fftSize = 2048;
         analyser.smoothingTimeConstant = 0.8;
         
+        // Check for supported MIME types
+        const mimeTypes = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/ogg;codecs=opus',
+            'audio/mp4'
+        ];
+        
+        let selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+        if (!selectedMimeType) {
+            throw new Error('No supported audio MIME types found');
+        }
+        
+        console.log('Using audio format:', selectedMimeType);
+        
         mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'audio/webm;codecs=opus',
+            mimeType: selectedMimeType,
             audioBitsPerSecond: 128000
         });
         
         mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
         };
 
         mediaRecorder.onstop = async () => {
             if (isProcessing) return; // Don't process if already processing
             
             isProcessing = true;
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
             audioChunks = [];
             
             // Create progress indicator
@@ -128,7 +145,8 @@ startButton.addEventListener('click', async () => {
             
             // Send audio to backend for transcription
             const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.webm');
+            const fileExtension = selectedMimeType.split('/')[1].split(';')[0];
+            formData.append('audio', audioBlob, `recording.${fileExtension}`);
             
             try {
                 recordingStatus.textContent = 'Processing question...';
@@ -142,6 +160,12 @@ startButton.addEventListener('click', async () => {
                     }
                 }, 500);
                 
+                console.log('Sending audio file:', {
+                    type: selectedMimeType,
+                    size: audioBlob.size,
+                    extension: fileExtension
+                });
+                
                 const response = await fetch('/transcribe', {
                     method: 'POST',
                     body: formData
@@ -150,14 +174,17 @@ startButton.addEventListener('click', async () => {
                 clearInterval(progressInterval);
                 progressBar.style.width = '100%';
                 
-                const data = await response.json();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to process audio');
+                }
                 
-                if (response.ok) {
-                    const transcript = data.transcription;
-                    statusDiv.remove();
-                    
+                const data = await response.json();
+                statusDiv.remove();
+                
+                if (data.transcription) {
                     // Add only the transcription to the transcription column
-                    addTranscription(transcript);
+                    addTranscription(data.transcription);
                     
                     // Process the transcript with the LLM
                     const queryResponse = await fetch('/query', {
@@ -165,32 +192,24 @@ startButton.addEventListener('click', async () => {
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ query: transcript })
+                        body: JSON.stringify({ query: data.transcription })
                     });
                     
                     const queryData = await queryResponse.json();
                     
                     if (queryResponse.ok) {
                         const sections = parseLLMResponse(queryData.text_response);
-                        
-                        // Add content to each column while preserving history
                         addResponse(sections.response);
                         addSummary(sections.summary);
-                        
-                        if (queryData.audio_url) {
-                            const audio = new Audio(queryData.audio_url);
-                            audio.play();
-                        }
                     } else {
                         addResponse('Error processing query');
                     }
                 } else {
-                    statusDiv.remove();
                     addResponse('Error transcribing audio');
                 }
             } catch (error) {
                 console.error('Transcription error:', error);
-                addResponse('Error processing audio');
+                addResponse(`Error: ${error.message}`);
             } finally {
                 isProcessing = false;
                 recordingStatus.textContent = 'Ready for next question';

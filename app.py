@@ -10,6 +10,7 @@ import tempfile
 import whisper
 import logging
 import torch
+import subprocess
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,13 +25,70 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize vector store and Whisper model
 vector_store = VectorStore()
-# Use the smallest model for faster transcription
 whisper_model = whisper.load_model("tiny", device="cuda" if torch.cuda.is_available() else "cpu")
+logger.info(f"Loaded Whisper model on device: {whisper_model.device}")
 
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'wav', 'mp3', 'm4a', 'webm'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'wav', 'mp3', 'm4a', 'webm', 'ogg', 'mp4'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def convert_audio(input_path, output_path):
+    """Convert audio to WAV format using ffmpeg."""
+    try:
+        # First, check if input file exists and has content
+        if not os.path.exists(input_path):
+            logger.error(f"Input file does not exist: {input_path}")
+            return False
+            
+        if os.path.getsize(input_path) == 0:
+            logger.error(f"Input file is empty: {input_path}")
+            return False
+            
+        # Log the input file details
+        logger.info(f"Converting audio file: {input_path}")
+        logger.info(f"File size: {os.path.getsize(input_path)} bytes")
+        
+        command = [
+            'ffmpeg',
+            '-i', input_path,
+            '-acodec', 'pcm_s16le',
+            '-ar', '16000',
+            '-ac', '1',
+            '-y',
+            output_path
+        ]
+        
+        logger.info(f"Running FFmpeg command: {' '.join(command)}")
+        
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        
+        stdout, stderr = process.communicate()
+        
+        if process.returncode != 0:
+            error_msg = stderr.decode()
+            logger.error(f"FFmpeg error: {error_msg}")
+            raise Exception(f"FFmpeg conversion failed: {error_msg}")
+            
+        # Verify the output file
+        if not os.path.exists(output_path):
+            logger.error("Output file was not created")
+            return False
+            
+        if os.path.getsize(output_path) == 0:
+            logger.error("Output file is empty")
+            return False
+            
+        logger.info(f"Successfully converted audio to WAV format: {output_path}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error converting audio: {str(e)}")
+        return False
 
 @app.route('/')
 def index():
@@ -91,7 +149,6 @@ def process_query():
         return jsonify({'error': 'No query provided'}), 400
     
     query = data['query']
-    
     try:
         # Get relevant context from vector store
         context = vector_store.search(query)
@@ -99,25 +156,24 @@ def process_query():
         # Get response from LLM
         response = query_llm(query, context)
         
-        # Generate a simple summary (you can enhance this later)
+        # Generate a simple summary
         summary = "Key points:\n" + "\n".join([
             "- " + line.strip()
             for line in response.split('.')
             if len(line.strip()) > 20
-        ][:3])  # Take first 3 substantial sentences as summary
+        ][:3])
         
         return jsonify({
             'text_response': response,
-            'summary': summary,
-            'audio_url': None
+            'summary': summary
         })
     except IndexError:
         return jsonify({
             'text_response': "I don't have any documents to search through yet. Please upload some documents first.",
-            'summary': "No documents available for analysis.",
-            'audio_url': None
+            'summary': "No documents available for analysis."
         }), 200
     except Exception as e:
+        logger.error(f"Error processing query: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/audio/<filename>')
@@ -135,34 +191,49 @@ def transcribe_audio():
         logger.error("No selected file")
         return jsonify({'error': 'No selected file'}), 400
     
-    # Save the audio file temporarily
-    temp_audio_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_audio.webm')
-    audio_file.save(temp_audio_path)
-    
-    try:
-        logger.info("Starting transcription")
-        # Transcribe using Whisper with optimized settings
-        result = whisper_model.transcribe(
-            temp_audio_path,
-            language='en',  # Specify language for faster processing
-            fp16=False,     # Use FP32 for better compatibility
-            beam_size=1     # Use smaller beam size for faster processing
-        )
-        transcription = result["text"]
-        
-        # Clean up temporary file
-        os.remove(temp_audio_path)
-        
-        logger.info("Transcription completed successfully")
-        return jsonify({
-            'transcription': transcription
-        })
-    except Exception as e:
-        # Clean up temporary file in case of error
-        if os.path.exists(temp_audio_path):
-            os.remove(temp_audio_path)
-        logger.error(f"Transcription error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+    # Create temporary files for input and output
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as temp_input_file, \
+         tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_output_file:
+        try:
+            # Save the uploaded file
+            audio_file.save(temp_input_file.name)
+            logger.info(f"Saved input file to: {temp_input_file.name}")
+            
+            # Convert to WAV if needed
+            if not convert_audio(temp_input_file.name, temp_output_file.name):
+                raise Exception("Failed to convert audio to WAV format")
+            
+            # Verify the WAV file is valid
+            if not os.path.getsize(temp_output_file.name) > 0:
+                raise ValueError("Empty audio file")
+            
+            # Transcribe using Whisper
+            logger.info(f"Transcribing audio: {temp_output_file.name}")
+            result = whisper_model.transcribe(
+                temp_output_file.name,
+                language="en",
+                fp16=False,
+                beam_size=1,
+                best_of=1,
+                temperature=0.0
+            )
+            
+            if not result or 'text' not in result:
+                raise ValueError("No transcription result")
+            
+            return jsonify({'transcription': result['text']})
+            
+        except Exception as e:
+            logger.error(f"Error during transcription: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+            
+        finally:
+            # Clean up the temporary files
+            try:
+                os.unlink(temp_input_file.name)
+                os.unlink(temp_output_file.name)
+            except Exception as e:
+                logger.warning(f"Error cleaning up temporary files: {str(e)}")
 
 if __name__ == '__main__':
     app.run(debug=True) 
