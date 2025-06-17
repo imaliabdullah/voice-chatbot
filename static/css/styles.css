@@ -1,0 +1,390 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+}
+
+h2 {
+    color: #34495e;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.upload-section {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+#uploadForm {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#uploadForm input[type="file"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#uploadForm button {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#uploadForm button:hover {
+    background-color: #2980b9;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.column {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-box {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.transcription-column .content-box {
+    background-color: #e8f4f8;
+}
+
+.response-column .content-box {
+    background-color: #f0f7ff;
+}
+
+.summary-column .content-box {
+    background-color: #f8f4e8;
+}
+
+.control-section {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.recording-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.record-btn {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.record-btn:hover {
+    background-color: #27ae60;
+    transform: translateY(-1px);
+}
+
+.record-btn:active {
+    transform: translateY(1px);
+}
+
+#stopRecording {
+    background-color: #e74c3c;
+}
+
+#stopRecording:hover {
+    background-color: #c0392b;
+}
+
+#recordingStatus {
+    font-size: 0.9rem;
+    color: #666;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    transition: all 0.3s;
+}
+
+#recordingStatus.listening {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+#recordingStatus.processing {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+#recordingStatus.error {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+#uploadStatus {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .column {
+        height: 300px;
+    }
+}
+
+/* Loading Indicator */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.processing-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Progress bar */
+.progress-container {
+    width: 100%;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.progress-bar {
+    height: 4px;
+    background-color: #3498db;
+    border-radius: 5px;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Transcription item styles */
+.transcription-item,
+.response-item,
+.summary-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.transcription-item {
+    border-left-color: #28a745;
+}
+
+.response-item {
+    border-left-color: #007bff;
+}
+
+.summary-item {
+    border-left-color: #6c757d;
+}
+
+/* Style for bullet points and lists */
+.response-item ul,
+.summary-item ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.response-item li,
+.summary-item li {
+    margin: 4px 0;
+}
+
+/* Add spacing between items */
+.transcription-item + .transcription-item,
+.response-item + .response-item,
+.summary-item + .summary-item {
+    margin-top: 15px;
+}
+
+/* Style for timestamps or metadata */
+.item-meta {
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+/* Hover effect for items */
+.transcription-item:hover,
+.response-item:hover,
+.summary-item:hover {
+    background: #f1f3f5;
+    transition: background-color 0.2s ease;
+}
+
+/* Scrollbar styling */
+.content-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content-box::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.content-box::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.content-box::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Interview mode styles */
+.interview-active {
+    position: relative;
+}
+
+.interview-active::after {
+    content: '🎤';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.recording-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.recording-status.active {
+    background-color: #e8f5e9;
+    border-left: 4px solid #4caf50;
+}
+
+.recording-status.processing {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.recording-status.error {
+    background-color: #ffebee;
+    border-left: 4px solid #f44336;
+}
+
+/* Add microphone icon to buttons */
+.record-btn::before {
+    content: '🎤';
+    font-size: 1.2rem;
+}
+
+#stopRecording::before {
+    content: '⏹';
+} 

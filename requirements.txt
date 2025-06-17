@@ -1,0 +1,13 @@
+flask
+PyMuPDF
+easyocr
+scikit-learn
+nltk
+groq
+python-dotenv
+numpy
+python-multipart
+openai-whisper
+huggingface-hub
+torch
+Jinja2

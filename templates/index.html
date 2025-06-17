@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Chatbot</h1>
+        
+        <div class="upload-section">
+            <h2>Upload Documents</h2>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg">
+                <button type="submit">Upload</button>
+            </form>
+            <div id="uploadStatus"></div>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Column: Transcription -->
+            <div class="column transcription-column">
+                <h2>Transcription</h2>
+                <div class="content-box" id="transcriptionBox">
+                    <div class="transcription-content"></div>
+                </div>
+            </div>
+
+            <!-- Middle Column: LLM Response -->
+            <div class="column response-column">
+                <h2>LLM Response</h2>
+                <div class="content-box" id="responseBox">
+                    <div class="response-content"></div>
+                </div>
+            </div>
+
+            <!-- Right Column: Key Summary -->
+            <div class="column summary-column">
+                <h2>Key Summary</h2>
+                <div class="content-box" id="summaryBox">
+                    <div class="summary-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <div class="recording-controls">
+                <button id="startRecording" class="record-btn">
+                    Start Recording
+                </button>
+                <button id="stopRecording" class="record-btn" style="display: none;">
+                    Stop Recording
+                </button>
+                <div id="recordingStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+</body>
+</html> 
